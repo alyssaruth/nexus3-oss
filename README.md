@@ -128,8 +128,11 @@ Ansible variables, along with the default values (see `default/main.yml`) :
 
 The role will install latest nexus available version by default. You may fix the version by setting
 the `nexus_version` variable. See available versions at https://www.sonatype.com/download-oss-sonatype.
-When having a slow pull through proxy, a retry can be useful to prevent timeouts. You can add retries to the download by setting these variables:
+
+When having a slow pull through proxy, increasing the timeout and/or adding retries can be useful to prevent failures. 
+You can tweak the download config by setting these variables:
 ```yaml
+    nexus_download_timeout: 300 # 60 by default
     nexus_download_retries: 3 # 0 by default
     nexus_download_delay: 15
 ```
