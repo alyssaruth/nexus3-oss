@@ -7,10 +7,6 @@ import java.util.concurrent.TimeUnit
 
 import org.sonatype.nexus.cleanup.storage.CleanupPolicy
 import org.sonatype.nexus.cleanup.storage.CleanupPolicyStorage
-import static org.sonatype.nexus.repository.search.DefaultComponentMetadataProducer.IS_PRERELEASE_KEY
-import static org.sonatype.nexus.repository.search.DefaultComponentMetadataProducer.LAST_BLOB_UPDATED_KEY
-import static org.sonatype.nexus.repository.search.DefaultComponentMetadataProducer.LAST_DOWNLOADED_KEY
-import static org.sonatype.nexus.repository.search.DefaultComponentMetadataProducer.REGEX_KEY;
 
 
 CleanupPolicyStorage cleanupPolicyStorage = container.lookup(CleanupPolicyStorage.class.getName())
@@ -42,12 +38,12 @@ parsed_args.each { currentPolicy ->
                 log.info("No change Cleanup Policy <name=${currentPolicy.name}>")
             } else {
                 log.info("Update Cleanup Policy <name={}, format={}, lastBlob={}, lastDownload={}, prerelease={}, regex={}> ",
-                            currentPolicy.name,
-                            currentPolicy.format,
-                            currentPolicy.criteria.lastBlobUpdated,
-                            currentPolicy.criteria.lastDownloaded,
-                            currentPolicy.criteria.preRelease,
-                            currentPolicy.criteria.regexKey)
+                        currentPolicy.name,
+                        currentPolicy.format,
+                        currentPolicy.criteria.lastBlobUpdated,
+                        currentPolicy.criteria.lastDownloaded,
+                        currentPolicy.criteria.isPrerelease,
+                        currentPolicy.criteria.regexKey)
                 existingPolicy.setNotes(currentPolicy.notes)
                 existingPolicy.setCriteria(criteriaMap)
                 cleanupPolicyStorage.update(existingPolicy)
@@ -58,12 +54,12 @@ parsed_args.each { currentPolicy ->
         } else {
             // "create" operation
             log.info("Creating Cleanup Policy <name={}, format={}, lastBlob={}, lastDownload={}, preRelease={}, regex={}>",
-                            currentPolicy.name,
-                            currentPolicy.format,
-                            currentPolicy.criteria.lastBlobUpdated,
-                            currentPolicy.criteria.lastDownloaded,
-                            currentPolicy.criteria.preRelease,
-                            currentPolicy.criteria.regexKey)
+                    currentPolicy.name,
+                    currentPolicy.format,
+                    currentPolicy.criteria.lastBlobUpdated,
+                    currentPolicy.criteria.lastDownloaded,
+                    currentPolicy.criteria.isPrerelease,
+                    currentPolicy.criteria.regexKey)
 
             CleanupPolicy cleanupPolicy = cleanupPolicyStorage.newCleanupPolicy()
             cleanupPolicy.with {
@@ -91,24 +87,24 @@ return JsonOutput.toJson(scriptResults)
 def Map<String, String> createCriteria(currentPolicy) {
     Map<String, String> criteriaMap = Maps.newHashMap()
     if (currentPolicy.criteria.lastBlobUpdated == null) {
-        criteriaMap.remove(LAST_BLOB_UPDATED_KEY)
+        criteriaMap.remove('lastBlobUpdated')
     } else {
-        criteriaMap.put(LAST_BLOB_UPDATED_KEY, asStringSeconds(currentPolicy.criteria.lastBlobUpdated))
+        criteriaMap.put('lastBlobUpdated', asStringSeconds(currentPolicy.criteria.lastBlobUpdated))
     }
     if (currentPolicy.criteria.lastDownloaded == null) {
-        criteriaMap.remove(LAST_DOWNLOADED_KEY)
+        criteriaMap.remove('lastDownloaded')
     } else {
-        criteriaMap.put(LAST_DOWNLOADED_KEY, asStringSeconds(currentPolicy.criteria.lastDownloaded))
+        criteriaMap.put('lastDownloaded', asStringSeconds(currentPolicy.criteria.lastDownloaded))
     }
-    if ((currentPolicy.criteria.preRelease == null) || (currentPolicy.criteria.preRelease == "")) {
-        criteriaMap.remove(IS_PRERELEASE_KEY)
+    if ((currentPolicy.criteria.isPrerelease == null) || (currentPolicy.criteria.isPrerelease == "")) {
+        criteriaMap.remove('isPrerelease')
     } else {
-        criteriaMap.put(IS_PRERELEASE_KEY, Boolean.toString(currentPolicy.criteria.preRelease == "PRERELEASES"))
+        criteriaMap.put('isPrerelease', Boolean.toString(currentPolicy.criteria.isPrerelease == "PRERELEASES"))
     }
     if ((currentPolicy.criteria.regexKey == null) || (currentPolicy.criteria.regexKey == "")) {
-        criteriaMap.remove(REGEX_KEY)
+        criteriaMap.remove('regex')
     } else {
-       criteriaMap.put(REGEX_KEY, String.valueOf(currentPolicy.criteria.regexKey))
+        criteriaMap.put('regex', String.valueOf(currentPolicy.criteria.regexKey))
     }
     log.info("Using criteriaMap: ${criteriaMap}")
 
@@ -123,24 +119,24 @@ def Boolean isPolicyEqual(existingPolicy, currentPolicy) {
     isequal &= existingPolicy.getNotes() == currentPolicy.notes
     isequal &= existingPolicy.getFormat() == currentPolicy.format
 
-    isequal &= (((! existingPolicy.getCriteria().containsKey(LAST_BLOB_UPDATED_KEY)) && (! currentCriteria.containsKey(LAST_BLOB_UPDATED_KEY)))
-    ||  (existingPolicy.getCriteria().containsKey(LAST_BLOB_UPDATED_KEY)
-        && currentCriteria.containsKey(LAST_BLOB_UPDATED_KEY)
-        && existingPolicy.getCriteria()[LAST_BLOB_UPDATED_KEY] == currentCriteria[LAST_BLOB_UPDATED_KEY]))
-    isequal &= ((! (existingPolicy.getCriteria().containsKey(LAST_DOWNLOADED_KEY)) && (! currentCriteria.containsKey(LAST_DOWNLOADED_KEY)))
-    ||  (existingPolicy.getCriteria().containsKey(LAST_DOWNLOADED_KEY)
-        && currentCriteria.containsKey(LAST_DOWNLOADED_KEY)
-        && existingPolicy.getCriteria()[LAST_DOWNLOADED_KEY] == currentCriteria[LAST_DOWNLOADED_KEY]))
+    isequal &= (((! existingPolicy.getCriteria().containsKey('lastBlobUpdated')) && (! currentCriteria.containsKey('lastBlobUpdated')))
+            ||  (existingPolicy.getCriteria().containsKey('lastBlobUpdated')
+            && currentCriteria.containsKey('lastBlobUpdated')
+            && existingPolicy.getCriteria()['lastBlobUpdated'] == currentCriteria['lastBlobUpdated']))
+    isequal &= ((! (existingPolicy.getCriteria().containsKey('lastDownloaded')) && (! currentCriteria.containsKey('lastDownloaded')))
+            ||  (existingPolicy.getCriteria().containsKey('lastDownloaded')
+            && currentCriteria.containsKey('lastDownloaded')
+            && existingPolicy.getCriteria()['lastDownloaded'] == currentCriteria['lastDownloaded']))
 
-    isequal &= (((! existingPolicy.getCriteria().containsKey(IS_PRERELEASE_KEY)) && (! currentCriteria.containsKey(IS_PRERELEASE_KEY)))
-    ||  (existingPolicy.getCriteria().containsKey(IS_PRERELEASE_KEY)
-        && currentCriteria.containsKey(IS_PRERELEASE_KEY)
-        && existingPolicy.getCriteria()[IS_PRERELEASE_KEY] == currentCriteria[IS_PRERELEASE_KEY]))
+    isequal &= (((! existingPolicy.getCriteria().containsKey('isPrerelease')) && (! currentCriteria.containsKey('isPrerelease')))
+            ||  (existingPolicy.getCriteria().containsKey('isPrerelease')
+            && currentCriteria.containsKey('isPrerelease')
+            && existingPolicy.getCriteria()['isPrerelease'] == currentCriteria['isPrerelease']))
 
-    isequal &= (((! existingPolicy.getCriteria().containsKey(REGEX_KEY)) && (! currentCriteria.containsKey(REGEX_KEY)))
-    ||  (existingPolicy.getCriteria().containsKey(REGEX_KEY)
-        && currentCriteria.containsKey(REGEX_KEY)
-        && existingPolicy.getCriteria()[REGEX_KEY] == currentCriteria[REGEX_KEY]))
+    isequal &= (((! existingPolicy.getCriteria().containsKey('regex')) && (! currentCriteria.containsKey('regex')))
+            ||  (existingPolicy.getCriteria().containsKey('regex')
+            && currentCriteria.containsKey('regex')
+            && existingPolicy.getCriteria()['regex'] == currentCriteria['regex']))
 
     return isequal
 }
