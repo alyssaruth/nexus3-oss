@@ -78,7 +78,7 @@
     timeout: "{{ nexus_download_timeout }}"
   check_mode: false
   register: download_status
-  until: download_status.status_code == 200
+  until: download_status.status_code == 200 or download_status.status_code == 304
   retries: "{{ nexus_download_retries }}"
   delay: "{{ nexus_download_delay }}"
   notify:
